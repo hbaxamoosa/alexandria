@@ -22,6 +22,7 @@ import java.net.URL;
 import it.jaschke.alexandria.MainActivity;
 import it.jaschke.alexandria.R;
 import it.jaschke.alexandria.data.AlexandriaContract;
+import timber.log.Timber;
 
 
 /**
@@ -31,12 +32,10 @@ import it.jaschke.alexandria.data.AlexandriaContract;
  */
 public class BookService extends IntentService {
 
-    private final String LOG_TAG = BookService.class.getSimpleName();
-
     public static final String FETCH_BOOK = "it.jaschke.alexandria.services.action.FETCH_BOOK";
     public static final String DELETE_BOOK = "it.jaschke.alexandria.services.action.DELETE_BOOK";
-
     public static final String EAN = "it.jaschke.alexandria.services.extra.EAN";
+    private final String LOG_TAG = BookService.class.getSimpleName();
 
     public BookService() {
         super("Alexandria");
@@ -47,9 +46,11 @@ public class BookService extends IntentService {
         if (intent != null) {
             final String action = intent.getAction();
             if (FETCH_BOOK.equals(action)) {
+                Timber.v(LOG_TAG + " intent action = FECTH_BOOK");
                 final String ean = intent.getStringExtra(EAN);
                 fetchBook(ean);
             } else if (DELETE_BOOK.equals(action)) {
+                Timber.v(LOG_TAG + " intent action = DELETE_BOOK");
                 final String ean = intent.getStringExtra(EAN);
                 deleteBook(ean);
             }
@@ -72,7 +73,12 @@ public class BookService extends IntentService {
      */
     private void fetchBook(String ean) {
 
+        Timber.v(LOG_TAG + " inside fecthBook(String ean)");
+
+        // TODO: fetchBook should fail gracefully if no internet connection is present
+
         if(ean.length()!=13){
+            Timber.v(LOG_TAG + " inside if statement");
             return;
         }
 
@@ -96,6 +102,7 @@ public class BookService extends IntentService {
         String bookJsonString = null;
 
         try {
+            Timber.v(LOG_TAG + " inside try block");
             final String FORECAST_BASE_URL = "https://www.googleapis.com/books/v1/volumes?";
             final String QUERY_PARAM = "q";
 
@@ -106,6 +113,8 @@ public class BookService extends IntentService {
                     .build();
 
             URL url = new URL(builtUri.toString());
+
+            Timber.v(LOG_TAG + " url is: " + url);
 
             urlConnection = (HttpURLConnection) url.openConnection();
             urlConnection.setRequestMethod("GET");
@@ -157,6 +166,7 @@ public class BookService extends IntentService {
         final String IMG_URL = "thumbnail";
 
         try {
+            Timber.v(LOG_TAG + " attempting to read JSON response");
             JSONObject bookJson = new JSONObject(bookJsonString);
             JSONArray bookArray;
             if(bookJson.has(ITEMS)){
@@ -168,6 +178,7 @@ public class BookService extends IntentService {
                 return;
             }
 
+            // TODO: update this functionality such that the use is able to select from one or more books
             JSONObject bookInfo = ((JSONObject) bookArray.get(0)).getJSONObject(VOLUME_INFO);
 
             String title = bookInfo.getString(TITLE);

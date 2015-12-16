@@ -19,7 +19,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-
 import it.jaschke.alexandria.data.AlexandriaContract;
 import it.jaschke.alexandria.services.BookService;
 import it.jaschke.alexandria.services.DownloadImage;
@@ -27,13 +26,12 @@ import it.jaschke.alexandria.services.DownloadImage;
 
 public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
     private static final String TAG = "INTENT_TO_SCAN_ACTIVITY";
-    private EditText ean;
-    private final int LOADER_ID = 1;
-    private View rootView;
-    private final String EAN_CONTENT="eanContent";
     private static final String SCAN_FORMAT = "scanFormat";
     private static final String SCAN_CONTENTS = "scanContents";
-
+    private final int LOADER_ID = 1;
+    private final String EAN_CONTENT="eanContent";
+    private EditText ean;
+    private View rootView;
     private String mScanFormat = "Format:";
     private String mScanContents = "Contents:";
 
@@ -90,6 +88,9 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
         rootView.findViewById(R.id.scan_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
+                // TODO: implement an onlick listener that triggers the barcode scanner app. Barcode scanner app will return result of ISBN
+
                 // This is the callback method that the system will invoke when your button is
                 // clicked. You might do this by launching another app or by including the
                 //functionality directly in this app.
