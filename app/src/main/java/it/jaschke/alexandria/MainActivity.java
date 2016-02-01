@@ -148,6 +148,18 @@ public class MainActivity extends AppCompatActivity implements NavigationDrawerF
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        Intent intent = getIntent();
+
+        String ISBN = intent.getStringExtra("ISBN");
+        String format = intent.getStringExtra("format");
+
+        Timber.v("ISBN is " + ISBN);
+        Timber.v("format is " + format);
+    }
+
+    @Override
     public void onItemSelected(String ean) {
         Bundle args = new Bundle();
         args.putString(BookDetail.EAN_KEY, ean);
