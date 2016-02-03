@@ -32,14 +32,9 @@
                 android:value=".MainActivity" />
         </activity>
         <activity
-            android:name=".SimpleScannerActivity"
-            android:label="@string/title_activity_settings"
-            android:parentActivityName=".MainActivity">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value=".MainActivity" />
+            android:name=".BarcodeCaptureActivity"
+            android:label="Read Barcode">
         </activity>
-
         <provider
             android:name=".data.BookProvider"
             android:authorities="it.jaschke.alexandria"
