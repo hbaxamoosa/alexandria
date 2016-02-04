@@ -16,6 +16,7 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.api.CommonStatusCodes;
 import com.google.android.gms.vision.barcode.Barcode;
@@ -32,19 +33,19 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
     private static final String SCAN_CONTENTS = "scanContents";
     private static final int RC_BARCODE_CAPTURE = 9001;
     private final int LOADER_ID = 1;
-    private final String EAN_CONTENT="eanContent";
+    private final String EAN_CONTENT = "eanContent";
     private EditText ean;
     private View rootView;
     private String mScanFormat = "Format:";
     private String mScanContents = "Contents:";
 
-    public AddBook(){
+    public AddBook() {
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        if(ean!=null) {
+        if (ean != null) {
             outState.putString(EAN_CONTENT, ean.getText().toString());
         }
     }
@@ -106,12 +107,17 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
                 Toast toast = Toast.makeText(context, text, duration);
                 toast.show();*/
 
-                // launch barcode activity.
-                Intent intent = new Intent(getContext(), BarcodeCaptureActivity.class);
-                intent.putExtra(BarcodeCaptureActivity.AutoFocus, true);
-                intent.putExtra(BarcodeCaptureActivity.UseFlash, false);
+                // check to see if network connection exists
+                if (Utility.isNetworkAvailable(getActivity())) {
+                    // launch barcode activity.
+                    Intent intent = new Intent(getContext(), BarcodeCaptureActivity.class);
+                    intent.putExtra(BarcodeCaptureActivity.AutoFocus, true);
+                    intent.putExtra(BarcodeCaptureActivity.UseFlash, false);
 
-                startActivityForResult(intent, RC_BARCODE_CAPTURE);
+                    startActivityForResult(intent, RC_BARCODE_CAPTURE);
+                } else {
+                    Toast.makeText(getActivity(), "No connection available", Toast.LENGTH_LONG).show();
+                }
             }
         });
 
@@ -133,7 +139,7 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
             }
         });
 
-        if(savedInstanceState!=null){
+        if (savedInstanceState != null) {
             ean.setText(savedInstanceState.getString(EAN_CONTENT));
             ean.setHint("");
         }
@@ -151,10 +157,10 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
      * data from it.  The <var>resultCode</var> will be
      * if the activity explicitly returned that,
      * didn't return any result, or crashed during its operation.
-     * <p/>
+     * <p>
      * <p>You will receive this call immediately before onResume() when your
      * activity is re-starting.
-     * <p/>
+     * <p>
      *
      * @param requestCode The integer request code originally supplied to
      *                    startActivityForResult(), allowing you to identify who this
@@ -189,12 +195,12 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
 
     @Override
     public android.support.v4.content.Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        if(ean.getText().length()==0){
+        if (ean.getText().length() == 0) {
             return null;
         }
-        String eanStr= ean.getText().toString();
-        if(eanStr.length()==10 && !eanStr.startsWith("978")){
-            eanStr="978"+eanStr;
+        String eanStr = ean.getText().toString();
+        if (eanStr.length() == 10 && !eanStr.startsWith("978")) {
+            eanStr = "978" + eanStr;
         }
         return new CursorLoader(
                 getActivity(),
@@ -221,9 +227,9 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
         String authors = data.getString(data.getColumnIndex(AlexandriaContract.AuthorEntry.AUTHOR));
         String[] authorsArr = authors.split(",");
         ((TextView) rootView.findViewById(R.id.authors)).setLines(authorsArr.length);
-        ((TextView) rootView.findViewById(R.id.authors)).setText(authors.replace(",","\n"));
+        ((TextView) rootView.findViewById(R.id.authors)).setText(authors.replace(",", "\n"));
         String imgUrl = data.getString(data.getColumnIndex(AlexandriaContract.BookEntry.IMAGE_URL));
-        if(Patterns.WEB_URL.matcher(imgUrl).matches()){
+        if (Patterns.WEB_URL.matcher(imgUrl).matches()) {
             new DownloadImage((ImageView) rootView.findViewById(R.id.bookCover)).execute(imgUrl);
             rootView.findViewById(R.id.bookCover).setVisibility(View.VISIBLE);
         }
@@ -240,7 +246,7 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
 
     }
 
-    private void clearFields(){
+    private void clearFields() {
         ((TextView) rootView.findViewById(R.id.bookTitle)).setText("");
         ((TextView) rootView.findViewById(R.id.bookSubTitle)).setText("");
         ((TextView) rootView.findViewById(R.id.authors)).setText("");
