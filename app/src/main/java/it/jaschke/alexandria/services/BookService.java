@@ -6,7 +6,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -19,6 +19,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import it.jaschke.alexandria.BuildConfig;
 import it.jaschke.alexandria.MainActivity;
 import it.jaschke.alexandria.R;
 import it.jaschke.alexandria.data.AlexandriaContract;
@@ -35,7 +36,6 @@ public class BookService extends IntentService {
     public static final String FETCH_BOOK = "it.jaschke.alexandria.services.action.FETCH_BOOK";
     public static final String DELETE_BOOK = "it.jaschke.alexandria.services.action.DELETE_BOOK";
     public static final String EAN = "it.jaschke.alexandria.services.extra.EAN";
-    private final String LOG_TAG = BookService.class.getSimpleName();
 
     public BookService() {
         super("Alexandria");
@@ -46,11 +46,19 @@ public class BookService extends IntentService {
         if (intent != null) {
             final String action = intent.getAction();
             if (FETCH_BOOK.equals(action)) {
-                Timber.v(LOG_TAG + " intent action = FECTH_BOOK");
+                if (BuildConfig.DEBUG) {
+                    Timber.d("intent action = FETCH_BOOK");
+                }
                 final String ean = intent.getStringExtra(EAN);
-                fetchBook(ean);
+                if (ean != null) {
+                    fetchBook(ean);
+                } else {
+                    Toast.makeText(this, R.string.no_network, Toast.LENGTH_LONG).show();
+                }
             } else if (DELETE_BOOK.equals(action)) {
-                Timber.v(LOG_TAG + " intent action = DELETE_BOOK");
+                if (BuildConfig.DEBUG) {
+                    Timber.d("intent action = DELETE_BOOK");
+                }
                 final String ean = intent.getStringExtra(EAN);
                 deleteBook(ean);
             }
@@ -73,12 +81,14 @@ public class BookService extends IntentService {
      */
     private void fetchBook(String ean) {
 
-        Timber.v(LOG_TAG + " inside fecthBook(String ean)");
-
-        // TODO: fetchBook should fail gracefully if no internet connection is present
+        if (BuildConfig.DEBUG) {
+            Timber.d("inside fecthBook(String ean)");
+        }
 
         if(ean.length()!=13){
-            Timber.v(LOG_TAG + " inside if statement");
+            if (BuildConfig.DEBUG) {
+                Timber.d("inside if statement");
+            }
             return;
         }
 
@@ -102,7 +112,9 @@ public class BookService extends IntentService {
         String bookJsonString = null;
 
         try {
-            Timber.v(LOG_TAG + " inside try block");
+            if (BuildConfig.DEBUG) {
+                Timber.d("inside try block");
+            }
             final String FORECAST_BASE_URL = "https://www.googleapis.com/books/v1/volumes?";
             final String QUERY_PARAM = "q";
 
@@ -114,7 +126,9 @@ public class BookService extends IntentService {
 
             URL url = new URL(builtUri.toString());
 
-            Timber.v(LOG_TAG + " url is: " + url);
+            if (BuildConfig.DEBUG) {
+                Timber.d("url is: " + url);
+            }
 
             urlConnection = (HttpURLConnection) url.openConnection();
             urlConnection.setRequestMethod("GET");
@@ -138,7 +152,7 @@ public class BookService extends IntentService {
             }
             bookJsonString = buffer.toString();
         } catch (Exception e) {
-            Log.e(LOG_TAG, "Error ", e);
+            Timber.e("Error ", e);
         } finally {
             if (urlConnection != null) {
                 urlConnection.disconnect();
@@ -147,7 +161,7 @@ public class BookService extends IntentService {
                 try {
                     reader.close();
                 } catch (final IOException e) {
-                    Log.e(LOG_TAG, "Error closing stream", e);
+                    Timber.e("Error closing stream", e);
                 }
             }
 
@@ -166,19 +180,25 @@ public class BookService extends IntentService {
         final String IMG_URL = "thumbnail";
 
         try {
-            Timber.v(LOG_TAG + " attempting to read JSON response");
-            JSONObject bookJson = new JSONObject(bookJsonString);
+            if (BuildConfig.DEBUG) {
+                Timber.d("attempting to read JSON response");
+            }
+            JSONObject bookJson;
+            if (bookJsonString != null) {
+                bookJson = new JSONObject(bookJsonString);
+            } else {
+                bookJson = null;
+            }
             JSONArray bookArray;
-            if(bookJson.has(ITEMS)){
+            if (bookJson.has(ITEMS)) {
                 bookArray = bookJson.getJSONArray(ITEMS);
-            }else{
+            } else {
                 Intent messageIntent = new Intent(MainActivity.MESSAGE_EVENT);
                 messageIntent.putExtra(MainActivity.MESSAGE_KEY,getResources().getString(R.string.not_found));
                 LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(messageIntent);
                 return;
             }
 
-            // TODO: update this functionality such that the use is able to select from one or more books
             JSONObject bookInfo = ((JSONObject) bookArray.get(0)).getJSONObject(VOLUME_INFO);
 
             String title = bookInfo.getString(TITLE);
@@ -208,7 +228,7 @@ public class BookService extends IntentService {
             }
 
         } catch (JSONException e) {
-            Log.e(LOG_TAG, "Error ", e);
+            Timber.e("Error ", e);
         }
     }
 

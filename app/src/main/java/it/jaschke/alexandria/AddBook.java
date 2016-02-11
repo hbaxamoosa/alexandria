@@ -78,20 +78,24 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
                     clearFields();
                     return;
                 }
-                //Once we have an ISBN, start a book intent
-                Intent bookIntent = new Intent(getActivity(), BookService.class);
-                bookIntent.putExtra(BookService.EAN, ean);
-                bookIntent.setAction(BookService.FETCH_BOOK);
-                getActivity().startService(bookIntent);
-                AddBook.this.restartLoader();
+
+                // check to see if network connectivity exists
+                if (Utility.isNetworkAvailable(getActivity())) {
+                    //Once we have an ISBN, start a book intent
+                    Intent bookIntent = new Intent(getActivity(), BookService.class);
+                    bookIntent.putExtra(BookService.EAN, ean);
+                    bookIntent.setAction(BookService.FETCH_BOOK);
+                    getActivity().startService(bookIntent);
+                    AddBook.this.restartLoader();
+                } else {
+                    Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_LONG).show();
+                }
             }
         });
 
         rootView.findViewById(R.id.scan_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                // TODO: implement an onlick listener that triggers the barcode scanner app. Barcode scanner app will return result of ISBN
 
                 // This is the callback method that the system will invoke when your button is
                 // clicked. You might do this by launching another app or by including the
@@ -100,23 +104,16 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
                 // are using an external app.
                 //when you're done, remove the toast below.
 
-                /*Context context = getActivity();
-                CharSequence text = "This button should let you scan a book for its barcode!";
-                int duration = Toast.LENGTH_SHORT;
-
-                Toast toast = Toast.makeText(context, text, duration);
-                toast.show();*/
-
                 // check to see if network connection exists
                 if (Utility.isNetworkAvailable(getActivity())) {
-                    // launch barcode activity.
+                    // launch barcode activity
                     Intent intent = new Intent(getContext(), BarcodeCaptureActivity.class);
                     intent.putExtra(BarcodeCaptureActivity.AutoFocus, true);
                     intent.putExtra(BarcodeCaptureActivity.UseFlash, false);
 
                     startActivityForResult(intent, RC_BARCODE_CAPTURE);
                 } else {
-                    Toast.makeText(getActivity(), "No connection available", Toast.LENGTH_LONG).show();
+                    Toast.makeText(getActivity(), R.string.no_network, Toast.LENGTH_LONG).show();
                 }
             }
         });
@@ -178,15 +175,17 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
             if (resultCode == CommonStatusCodes.SUCCESS) {
                 if (data != null) {
                     Barcode barcode = data.getParcelableExtra(BarcodeCaptureActivity.BarcodeObject);
-                    // statusMessage.setText(R.string.barcode_success);
                     ean.setText(barcode.displayValue);
-                    Timber.d("Barcode read: " + barcode.displayValue);
+                    if (BuildConfig.DEBUG) {
+                        Timber.d("Barcode read: " + barcode.displayValue);
+                    }
                 } else {
-                    // statusMessage.setText(R.string.barcode_failure);
-                    Timber.d("No barcode captured, intent data is null");
+                    if (BuildConfig.DEBUG) {
+                        Timber.d("No barcode captured, intent data is null");
+                    }
                 }
             } else {
-                // statusMessage.setText(String.format(getString(R.string.barcode_error), CommonStatusCodes.getStatusCodeString(resultCode)));
+                Toast.makeText(getContext(), "Barcode captured failed with error" + CommonStatusCodes.getStatusCodeString(resultCode), Toast.LENGTH_LONG).show();
             }
         } else {
             super.onActivityResult(requestCode, resultCode, data);
@@ -225,10 +224,26 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
         ((TextView) rootView.findViewById(R.id.bookSubTitle)).setText(bookSubTitle);
 
         String authors = data.getString(data.getColumnIndex(AlexandriaContract.AuthorEntry.AUTHOR));
-        String[] authorsArr = authors.split(",");
-        ((TextView) rootView.findViewById(R.id.authors)).setLines(authorsArr.length);
-        ((TextView) rootView.findViewById(R.id.authors)).setText(authors.replace(",", "\n"));
+        String[] authorsArr;
+        if (authors == null) {
+            if (BuildConfig.DEBUG) {
+                Timber.d("authors == null");
+            }
+            ((TextView) rootView.findViewById(R.id.authors)).setLines(1);
+            ((TextView) rootView.findViewById(R.id.authors)).setText("No author");
+        } else {
+            if (BuildConfig.DEBUG) {
+                Timber.d("!authors == null");
+            }
+            authorsArr = authors.split(",");
+            ((TextView) rootView.findViewById(R.id.authors)).setLines(authorsArr.length);
+            ((TextView) rootView.findViewById(R.id.authors)).setText(authors.replace(",", "\n"));
+        }
+
         String imgUrl = data.getString(data.getColumnIndex(AlexandriaContract.BookEntry.IMAGE_URL));
+        if (BuildConfig.DEBUG) {
+            Timber.d("imgUrl is " + imgUrl);
+        }
         if (Patterns.WEB_URL.matcher(imgUrl).matches()) {
             new DownloadImage((ImageView) rootView.findViewById(R.id.bookCover)).execute(imgUrl);
             rootView.findViewById(R.id.bookCover).setVisibility(View.VISIBLE);
